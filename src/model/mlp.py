@@ -1,11 +1,13 @@
 
 import numpy as np
+import sys
 
 # from util.activation_functions import Activation
 from model.logistic_layer import LogisticLayer
 from model.classifier import Classifier
 from util.activation_functions import Activation
 from sklearn.metrics import accuracy_score
+
 
 
 class MultilayerPerceptron(Classifier):
@@ -60,9 +62,13 @@ class MultilayerPerceptron(Classifier):
         # Here is an example of a MLP acting like the Logistic Regression
         self.layers = []
         #output_activation = "sigmoid"
-    
+       
         self.layers.append(LogisticLayer(train.input.shape[1], 16, None, self.output_activation, True))
-        self.layers.append(LogisticLayer(16, len(set(train.label)), None, self.output_activation, True))
+        #self.layers.append(LogisticLayer(784, 16, None, self.output_activation, True))
+        
+     
+        #self.layers.append(LogisticLayer(16, len(set(train.label)), None, self.output_activation, True))
+        self.layers.append(LogisticLayer(16, 10, None, self.output_activation, True))
         #self.layers.append(LogisticLayer(10, 1, None, output_activation, True))
         
         # total number of layers
@@ -105,7 +111,8 @@ class MultilayerPerceptron(Classifier):
         for l in self.layers:
             newInput = l.forward(newInput)
             # add bias values ("1"s) at the beginning of all data sets
-            newInput = np.insert(newInput, 0, 1, axis=0)
+            if (l != self._get_output_layer()):
+                newInput = np.insert(newInput, 0, 1, axis=0)
             
         return newInput
     
@@ -181,22 +188,34 @@ class MultilayerPerceptron(Classifier):
             #                             np.array(1.0))
             #softmaxDistribution = Activation.get_activation(self.output_activation)(self._get_output_layer.outp)
             softmaxDistribution = Activation.softmax(output)
-            
+#             print softmaxDistribution
             outputDeltas = np.ndarray(len(softmaxDistribution))
             for i in xrange(len(softmaxDistribution)):
                 if i == label:
                     outputDeltas[i] = 1 - softmaxDistribution[i]
                 else:
                     outputDeltas[i] = 0 - softmaxDistribution[i]
-                    
+            
+           
+#             print "OOOOOOOOOOOOOOOOOOOOOOOOOOO"  
+#             print label      
+#             print outputDeltas
+#             print "OOOOOOOOOOOOOOOOOOOOOOOOOOO"   
             self._get_output_layer().computeDerivative(outputDeltas,
                                                      None)
             
             
-            # (self.totalLayers - 1) because output layer already covered
+#             # (self.totalLayers - 1) because output layer already covered
             for i in range((self.totalLayers - 2), -1, -1):
                 self._get_layer(i).computeDerivative(self._get_layer(i+1).deltas,
                                                     self._get_layer(i+1).weights)
+                
+          
+#             self._get_layer(0).computeDerivative(self._get_layer(1).deltas,
+#                                                 self._get_layer(1).weights)
+                
+                
+                
                 
             # Update weights in the online learning fashion
             for l in self.layers:
@@ -221,8 +240,6 @@ class MultilayerPerceptron(Classifier):
             
             
             
-            
-            
                 
 #         max_index = 0
 #         for i in range(1, len(softmaxDistribution)):
@@ -230,7 +247,7 @@ class MultilayerPerceptron(Classifier):
 #                 max_index = i
 
 
-        print softmaxDistribution
+        #print softmaxDistribution
         
 
         max_index = np.argmax(softmaxDistribution)
