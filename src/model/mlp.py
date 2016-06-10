@@ -63,10 +63,9 @@ class MultilayerPerceptron(Classifier):
         self.layers = []
         #output_activation = "sigmoid"
        
-        self.layers.append(LogisticLayer(train.input.shape[1], 16, None, self.output_activation, True))
+        self.layers.append(LogisticLayer(train.input.shape[1], 16, None, "sigmoid", True))
         #self.layers.append(LogisticLayer(784, 16, None, self.output_activation, True))
         
-     
         #self.layers.append(LogisticLayer(16, len(set(train.label)), None, self.output_activation, True))
         self.layers.append(LogisticLayer(16, 10, None, self.output_activation, True))
         #self.layers.append(LogisticLayer(10, 1, None, output_activation, True))
@@ -186,36 +185,26 @@ class MultilayerPerceptron(Classifier):
 
             #self._get_output_layer.computeDerivative(np.array(label - self._get_output_layer.outp),
             #                             np.array(1.0))
-            #softmaxDistribution = Activation.get_activation(self.output_activation)(self._get_output_layer.outp)
-            softmaxDistribution = Activation.softmax(output)
-#             print softmaxDistribution
+            softmaxDistribution = Activation.get_activation(self.output_activation)(self._get_output_layer.outp)
+            #softmaxDistribution = Activation.softmax(output)
+
             outputDeltas = np.ndarray(len(softmaxDistribution))
             for i in xrange(len(softmaxDistribution)):
                 if i == label:
                     outputDeltas[i] = 1 - softmaxDistribution[i]
                 else:
                     outputDeltas[i] = 0 - softmaxDistribution[i]
-            
-           
-#             print "OOOOOOOOOOOOOOOOOOOOOOOOOOO"  
-#             print label      
-#             print outputDeltas
-#             print "OOOOOOOOOOOOOOOOOOOOOOOOOOO"   
+             
             self._get_output_layer().computeDerivative(outputDeltas,
                                                      None)
             
             
-#             # (self.totalLayers - 1) because output layer already covered
+            # (self.totalLayers - 1) because output layer already covered
+            # go backwards
             for i in range((self.totalLayers - 2), -1, -1):
                 self._get_layer(i).computeDerivative(self._get_layer(i+1).deltas,
                                                     self._get_layer(i+1).weights)
-                
-          
-#             self._get_layer(0).computeDerivative(self._get_layer(1).deltas,
-#                                                 self._get_layer(1).weights)
-                
-                
-                
+        
                 
             # Update weights in the online learning fashion
             for l in self.layers:
@@ -226,56 +215,25 @@ class MultilayerPerceptron(Classifier):
         # Classify an instance given the model of the classifier
         # You need to implement something here
         
+
         output = self._feed_forward(test_instance)
-        #softmaxDistribution = Activation.get_activation(self.output_activation)(output)
-        softmaxDistribution = Activation.softmax(output)
-        
+        # apply softmax to output
+        softmaxDistribution = Activation.get_activation(self.output_activation)(output)
         # get index of highest probability
-#         highestProbability = 0
-#         indexOfHighestProbability = 0
-#         for i in xrange(len(softmaxDistribution)):
-#             if softmaxDistribution[i] > highestProbability:
-#                 highestProbability = softmaxDistribution[i]
-#                 indexOfHighestProbability = i
-            
-            
-            
-                
-#         max_index = 0
-#         for i in range(1, len(softmaxDistribution)):
-#             if(softmaxDistribution[i] > softmaxDistribution[max_index]):
-#                 max_index = i
-
-
-        #print softmaxDistribution
-        
-
         max_index = np.argmax(softmaxDistribution)
 
-        print "LAAAAAAAAAAAAAAAAAABEL"
-        print test_label                
-        print "LAAAAAAAAAAAAAAAAAABEL"
-        #print test_instance
-        print "BBBBBBBBBBBBBBBBBBBBB"
-        print max_index
-        #print "===================="
-        #print self.findByInput(test_instance)
-        print "BBBBBBBBBBBBBBBBBBBBB"
-        
+#         print "LAAAAAAAAAAAAAAAAAABEL"
+#         print test_label                
+#         print "LAAAAAAAAAAAAAAAAAABEL"
+#         #print test_instance
+#         print "BBBBBBBBBBBBBBBBBBBBB"
+#         print max_index
+#         #print "===================="
+#         #print self.findByInput(test_instance)
+#         print "BBBBBBBBBBBBBBBBBBBBB"
         
         return max_index
-        
-        
-#     def findByInput(self, target_img):
-#         for label, img in zip(self.test_set.label, self.test_set.input):
-#             counter = 0
-#             for i, t in zip(img, target_img):
-# 
-#                 if i == t:
-#                     counter = counter + 1
-#             if (counter) == (len(img)):
-#                 return label
-#         return -1
+    
 
     def evaluate(self, test=None):
         """Evaluate a whole dataset.
@@ -292,10 +250,7 @@ class MultilayerPerceptron(Classifier):
         """
         if test is None:
             test = self.test_set.input
-        #print self.test_set.input
-        #print self.test_set.input[0]
         
-            #test = self.test_set
         # Once you can classify an instance, just use map for all of the test
         # set.
         evalList = []

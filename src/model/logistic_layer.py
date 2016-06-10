@@ -114,39 +114,39 @@ class LogisticLayer():
         if next_weights is None:
             self.deltas = next_derivatives
         else:
-#             self.deltas = (self.outp *
-#                            (1 - self.outp) *
-#                            np.dot(next_derivatives, next_weights))
+            self.deltas = (self.outp *
+                           (1 - self.outp) *
+                           np.dot(next_derivatives, np.transpose(next_weights[1::])))
  
-            
-#             print "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWwww"
-#             print next_weights[0]
-#             print "==============================="
-#             print next_derivatives
-#             print "==============================="
-            
-            tempDelta = np.ndarray(next_weights.shape[0]-1)
-            
-#             print len(tempDelta)
-#             print next_weights.shape[0]
-#             print next_weights.shape[1]
-#             print len(next_weights)
-#             print len(next_weights[0])
-            for j in xrange(1, next_weights.shape[0]):
-                sum = 0
-                for i in xrange(next_weights.shape[1]):
-                   sum += next_weights[j][i] * next_derivatives[i]
-                      
-                tempDelta[j-1] = sum
-                   
-               
-            self.deltas = self.outp * (1 - self.outp) * tempDelta
-            
+
+#             
+# #             print "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWwww"
+# #             print next_weights[0]
+# #             print "==============================="
+# #             print next_derivatives
+# #             print "==============================="
+#             
+#             tempDelta = np.ndarray(next_weights.shape[0]-1)
+#             
+# #             print len(tempDelta)
+# #             print next_weights.shape[0]
+# #             print next_weights.shape[1]
+# #             print len(next_weights)
+# #             print len(next_weights[0])
+#             for j in xrange(1, next_weights.shape[0]):
+#                 sum = 0
+#                 for i in xrange(next_weights.shape[1]):
+#                    sum += next_weights[j][i] * next_derivatives[i]
+#                       
+#                 tempDelta[j-1] = sum
+#                    
+#                
+#             self.deltas = self.outp * (1 - self.outp) * tempDelta
+#             
 
             
             
             
-#                   self.deltas = self.outp*(1 - self.outp)*np.multiply(np.transpose(next_weights), next_derivatives)
 
         # Or more general: output*(1-output) is the derivatives of sigmoid
         # (sigmoid_prime)
