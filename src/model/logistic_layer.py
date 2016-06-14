@@ -42,8 +42,7 @@ class LogisticLayer():
         # Get activation function from string
         self.activation_string = activation
         self.activation = Activation.get_activation(self.activation_string)
-        self.activation_derivative = Activation.get_derivative(
-                                    self.activation_string)
+        self.activation_derivative = Activation.get_derivative(self.activation_string)
 
         self.n_in = n_in
         self.n_out = n_out
@@ -81,7 +80,6 @@ class LogisticLayer():
             a numpy array (n_out,1) containing the output of the layer
         """
         
-
         # Here you have to implement the forward pass
         self.inp = inp
         outp = self._fire(inp)
@@ -108,45 +106,20 @@ class LogisticLayer():
 
         # Here the implementation of partial derivative calculation
 
-        # In case of the output layer, next_weights is array of 1
-        # and next_derivatives - the derivative of the error will be the errors
-        # Please see the call of this method in LogisticRegression.
+    
+    
+        # if this is the output layer then next_weights is passed as "None"
+        # and the computed deltas are passed in next_derivatives,
+        # else this is a hidden layer and the backpropagation deltas are computed
         if next_weights is None:
             self.deltas = next_derivatives
         else:
-            self.deltas = (self.outp *
-                           (1 - self.outp) *
+            # the bias weights in the weight matrix need to be ignored
+            # and the matrix needs to be transposed for correct multiplication
+            self.deltas = (self.activation_derivative(self.outp) * 
                            np.dot(next_derivatives, np.transpose(next_weights[1::])))
  
 
-#             
-# #             print "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWwww"
-# #             print next_weights[0]
-# #             print "==============================="
-# #             print next_derivatives
-# #             print "==============================="
-#             
-#             tempDelta = np.ndarray(next_weights.shape[0]-1)
-#             
-# #             print len(tempDelta)
-# #             print next_weights.shape[0]
-# #             print next_weights.shape[1]
-# #             print len(next_weights)
-# #             print len(next_weights[0])
-#             for j in xrange(1, next_weights.shape[0]):
-#                 sum = 0
-#                 for i in xrange(next_weights.shape[1]):
-#                    sum += next_weights[j][i] * next_derivatives[i]
-#                       
-#                 tempDelta[j-1] = sum
-#                    
-#                
-#             self.deltas = self.outp * (1 - self.outp) * tempDelta
-#             
-
-            
-            
-            
 
         # Or more general: output*(1-output) is the derivatives of sigmoid
         # (sigmoid_prime)
@@ -168,6 +141,7 @@ class LogisticLayer():
         # Or you can have two computeDerivative methods, feel free to call
         # the other is computeOutputLayerDerivative or such.
 
+
     def updateWeights(self, learning_rate):
         """
         Update the weights of the layer
@@ -180,5 +154,8 @@ class LogisticLayer():
                                         self.deltas[neuron] *
                                         self.inp)
 
+
     def _fire(self, inp):
-        return Activation.sigmoid(np.dot(np.array(inp), self.weights))
+        weightedSum = np.dot(np.array(inp), self.weights)
+        # return the value of the activation function for the weightedSum
+        return self.activation(weightedSum)

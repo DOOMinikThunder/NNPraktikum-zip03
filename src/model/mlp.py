@@ -2,7 +2,6 @@
 import numpy as np
 import sys
 
-# from util.activation_functions import Activation
 from model.logistic_layer import LogisticLayer
 from model.classifier import Classifier
 from util.activation_functions import Activation
@@ -17,7 +16,9 @@ class MultilayerPerceptron(Classifier):
 
     def __init__(self, train, valid, test, layers=None, input_weights=None,
                  output_task='classification', output_activation='softmax',
-                 cost='crossentropy', learning_rate=0.01, epochs=50):
+                 inputActivation='sigmoid', cost='crossentropy',
+                 learning_rate=0.01, epochs=50, learningRateReductionFactor=1.0,
+                 layerNeurons=[10]):
 
         """
         A digit-7 recognizer based on logistic regression algorithm
@@ -57,19 +58,37 @@ class MultilayerPerceptron(Classifier):
         self.layers = layers
         self.input_weights = input_weights
 
-
+        
+        # activation function for the hidden layers
+        self.inputActivation = inputActivation
+        # reduction factor of learning rate per epoch
+        self.learningRateReductionFactor = learningRateReductionFactor
+        
+        
+        #######################
+        #    CREATE LAYERS    #
+        #######################
         # Build up the network from specific layers
-        # Here is an example of a MLP acting like the Logistic Regression
         self.layers = []
-        #output_activation = "sigmoid"
-       
-        self.layers.append(LogisticLayer(train.input.shape[1], 16, None, "sigmoid", True))
-        #self.layers.append(LogisticLayer(784, 16, None, self.output_activation, True))
+        # check for correct argument
+        if (len(layerNeurons) < 1):
+            raise ValueError('Error: layerNeurons must contain at least one layer with neurons!')
+        # if there is only one layer it is an output layer
+        if (len(layerNeurons) == 1):
+            self.layers.append(LogisticLayer(train.input.shape[1], layerNeurons[0], None, self.output_activation, True))
+        # if there are more than one layer
+        else:
+            # first layer (hidden layer)
+            self.layers.append(LogisticLayer(train.input.shape[1], layerNeurons[0], None, self.inputActivation, False))
+            # rest of the hidden layers
+            for i in xrange(1, len(layerNeurons)-1):
+                self.layers.append(LogisticLayer(layerNeurons[i-1], layerNeurons[i], None, self.inputActivation, False))
+            # output layer
+            self.layers.append(LogisticLayer(layerNeurons[len(layerNeurons)-2], layerNeurons[len(layerNeurons)-1], None, self.output_activation, True))
+     
         
-        #self.layers.append(LogisticLayer(16, len(set(train.label)), None, self.output_activation, True))
-        self.layers.append(LogisticLayer(16, 10, None, self.output_activation, True))
-        #self.layers.append(LogisticLayer(10, 1, None, output_activation, True))
-        
+        # total number of output neurons
+        self.totalOutputs = layerNeurons[len(layerNeurons)-1]
         # total number of layers
         self.totalLayers = len(self.layers)
 
@@ -105,15 +124,14 @@ class MultilayerPerceptron(Classifier):
         # And remember the activation values of each layer
         """
         
-        newInput = inp
-        # for all layers
-        for l in self.layers:
-            newInput = l.forward(newInput)
-            # add bias values ("1"s) at the beginning of all data sets
-            if (l != self._get_output_layer()):
-                newInput = np.insert(newInput, 0, 1, axis=0)
-            
-        return newInput
+        # do the forward pass for the first layer separately (because the bias was already added)
+        inp = self._get_layer(0).forward(inp)
+        
+        # for all layers except the first: do the forward pass
+        for i in xrange(1, self.totalLayers):
+            # add bias value ("1") at the beginning
+            inp = np.insert(inp, 0, 1, axis=0)
+            inp = self._get_layer(i).forward(inp)
     
 
     def _compute_error(self, target):
@@ -125,13 +143,26 @@ class MultilayerPerceptron(Classifier):
         ndarray :
             a numpy array (1,nOut) containing the output of the layer
         """
-        pass
+        
+        outputDeltas = np.ndarray(self.totalOutputs)
+        for i in xrange(self.totalOutputs):
+            # index equals the class label, so the "1" is at the index of the class label
+            if i != target:
+                outputDeltas[i] = 0 - self._get_output_layer().outp[i]
+            else:
+                outputDeltas[i] = 1 - self._get_output_layer().outp[i]
+        
+        return outputDeltas
+        
 
     def _update_weights(self):
         """
         Update the weights of the layers by propagating back the error
         """
-        pass
+        
+        for l in self.layers:
+            l.updateWeights(self.learning_rate)
+            
 
     def train(self, verbose=True):
         """Train the Multi-layer Perceptrons
@@ -143,12 +174,16 @@ class MultilayerPerceptron(Classifier):
         """
         
         # Run the training "epochs" times, print out the logs
-        for epoch in range(self.epochs):
+        for epoch in xrange(self.epochs):
             if verbose:
                 print("Training epoch {0}/{1}.."
                       .format(epoch + 1, self.epochs))
 
+
             self._train_one_epoch()
+            # reduce learning_rate each epoch
+            self.learning_rate *= self.learningRateReductionFactor
+
 
             if verbose:
                 accuracy = accuracy_score(self.validation_set.label,
@@ -168,71 +203,41 @@ class MultilayerPerceptron(Classifier):
 
         for img, label in zip(self.training_set.input,
                               self.training_set.label):
-
-            # Use LogisticLayer to do the job
-            # Feed it with inputs
-
-            # Do a forward pass to calculate the output and the error
-            #self.layer.forward(img)
-            output = self._feed_forward(img)
-
-            # Compute the derivatives w.r.t to the error
-            # Please note the treatment of nextDerivatives and nextWeights
-            # in case of an output layer
             
-            
-           
+            ########################
+            #    FORWARD PASSES    #
+            ########################
+            # forward passes through all layers
+            self._feed_forward(img)
 
-            #self._get_output_layer.computeDerivative(np.array(label - self._get_output_layer.outp),
-            #                             np.array(1.0))
-            softmaxDistribution = Activation.get_activation(self.output_activation)(self._get_output_layer.outp)
-            #softmaxDistribution = Activation.softmax(output)
-
-            outputDeltas = np.ndarray(len(softmaxDistribution))
-            for i in xrange(len(softmaxDistribution)):
-                if i == label:
-                    outputDeltas[i] = 1 - softmaxDistribution[i]
-                else:
-                    outputDeltas[i] = 0 - softmaxDistribution[i]
-             
+            ###################################
+            #    BACKPROPAGATION OF DELTAS    #
+            ###################################
+            # do the backpropagation for the output layer:
+            # compute output deltas and pass to output layer
+            outputDeltas = self._compute_error(label)
             self._get_output_layer().computeDerivative(outputDeltas,
-                                                     None)
-            
-            
-            # (self.totalLayers - 1) because output layer already covered
-            # go backwards
-            for i in range((self.totalLayers - 2), -1, -1):
+                                                       None)
+            # do the backpropagation for all hidden layers:
+            # go backwards and ignore the last/output layer
+            for i in xrange((self.totalLayers - 2), -1, -1):
                 self._get_layer(i).computeDerivative(self._get_layer(i+1).deltas,
-                                                    self._get_layer(i+1).weights)
+                                                     self._get_layer(i+1).weights)
         
-                
-            # Update weights in the online learning fashion
-            for l in self.layers:
-                l.updateWeights(self.learning_rate)
+            ########################
+            #    WEIGHT UPDATES    #
+            ########################
+            # Update weights in the online learning fashion for all layers
+            self._update_weights()
         
         
-    def classify(self, test_instance, test_label):
+    def classify(self, test_instance):#, test_label):
         # Classify an instance given the model of the classifier
         # You need to implement something here
         
-
-        output = self._feed_forward(test_instance)
-        # apply softmax to output
-        softmaxDistribution = Activation.get_activation(self.output_activation)(output)
-        # get index of highest probability
-        max_index = np.argmax(softmaxDistribution)
-
-#         print "LAAAAAAAAAAAAAAAAAABEL"
-#         print test_label                
-#         print "LAAAAAAAAAAAAAAAAAABEL"
-#         #print test_instance
-#         print "BBBBBBBBBBBBBBBBBBBBB"
-#         print max_index
-#         #print "===================="
-#         #print self.findByInput(test_instance)
-#         print "BBBBBBBBBBBBBBBBBBBBB"
-        
-        return max_index
+        self._feed_forward(test_instance)
+        # return index of highest probability (indices are equal to the class labels)
+        return np.argmax(self._get_output_layer().outp)
     
 
     def evaluate(self, test=None):
@@ -251,15 +256,17 @@ class MultilayerPerceptron(Classifier):
         if test is None:
             test = self.test_set.input
         
+#         # following code does not work somehow
+#         evalList = []
+#         for i in xrange(len(self.test_set.input)):
+#             evalList.append(self.classify(self.test_set.input[i], self.test_set.label[i]))
+#              
+#         return evalList
+        
         # Once you can classify an instance, just use map for all of the test
         # set.
-        evalList = []
-        for i in xrange(len(self.test_set.input)):
-            evalList.append(self.classify(self.test_set.input[i], self.test_set.label[i]))
-            
-        return evalList
-    
-        #return list(map(self.classify, test))
+        return list(map(self.classify, test))
+
 
     def __del__(self):
         # Remove the bias from input data

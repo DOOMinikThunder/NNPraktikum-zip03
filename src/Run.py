@@ -74,8 +74,10 @@ def main():
     myMLPClassifier = MultilayerPerceptron(data.training_set,
                                            data.validation_set,
                                            data.test_set,
-                                           learning_rate=0.005,
-                                           epochs=100)
+                                           learning_rate=0.005,#0.005,
+                                           epochs=50,
+                                           #learningRateReductionFactor=0.9,
+                                           layerNeurons=[64,10])
 
     print("\nLogistic Regression has been training..")
     myMLPClassifier.train()
@@ -104,10 +106,10 @@ def main():
     # evaluator.printComparison(data.testSet, perceptronPred)
     evaluator.printAccuracy(data.test_set, mlpPred)
 
-#     # Draw
-#     plot = PerformancePlot("Logistic Regression")
-#     plot.draw_performance_epoch(myLRClassifier.performances,
-#                                 myLRClassifier.epochs)
+    # Draw
+    plot = PerformancePlot("MLP classifier")
+    plot.draw_performance_epoch(myMLPClassifier.performances,
+                                myMLPClassifier.epochs)
 
 if __name__ == '__main__':
     main()
